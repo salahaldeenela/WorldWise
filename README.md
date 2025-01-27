@@ -53,5 +53,8 @@ Edit
 npm run build
 This will generate a production build in the dist folder.
 
+Important note the website i am hosting on doesnt support json server and as a result wont be able to modify or read the json i was using
+to be able to use the full website download it from the instructions and run it
+
 Website
 You can see the live version of the project by visiting this link https://chipper-fox-c8705e.netlify.app/.
