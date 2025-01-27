@@ -1,0 +1,14 @@
+{
+  "cities": [
+    {
+      "id": "fced",
+      "cityName": "Volchansk",
+      "date": "2025-01-27T07:00:05.438Z",
+      "notes": "sa",
+      "position": {
+        "lat": 60.00002631292143,
+        "lng": 59.99981939792633
+      }
+    }
+  ]
+}
