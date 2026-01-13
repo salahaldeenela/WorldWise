@@ -12,6 +12,7 @@ import Form from "../Components/Form";
 import { CitiesProvider } from "../Contexts/CitiesContext";
 import { AuthProvider } from "../Contexts/FakeAuthContext";
 import ProtectedRoute from "../Pages/ProtectedRoute";
+import Register from "../Pages/Register";
 export default function App() {
   return (
     <CitiesProvider>
@@ -37,6 +38,7 @@ export default function App() {
               <Route path="form" element={<Form />}></Route>
             </Route>
             <Route path="login" element={<Login />} />
+            <Route path="register" element={<Register />} />
           </Routes>
         </BrowserRouter>
       </AuthProvider>

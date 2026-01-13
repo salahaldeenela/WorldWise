@@ -9,11 +9,12 @@ export default function Login() {
   const [password, setPassword] = useState("qwerty");
   const { Login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  function handleLogin(e) {
+  async function handleLogin(e) {
     e.preventDefault();
     try {
       if (!email || !password) throw new Error("Email or password is empty");
-      Login(email, password);
+      await Login(email, password);
+      navigate("/app/cities");
     } catch (err) {
       console.log(err);
     }

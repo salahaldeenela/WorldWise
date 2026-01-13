@@ -1,113 +1,145 @@
 import { createContext, useContext, useEffect, useReducer } from "react";
 
-// Create a context
 const CitiesContext = createContext();
+
+const API = "https://backend-production-c718.up.railway.app/api/cities";
+
+const INITIAL_STATE = {
+  cities: [],
+  currCity: {},
+  loading: false,
+  error: null,
+};
 
 function reducer(state, action) {
   switch (action.type) {
     case "cities/loading":
-      return { ...state, loading: true };
+      return { ...state, loading: true, error: null };
+
     case "cities/loaded":
       return { ...state, loading: false, cities: action.payload };
+
     case "city/loading":
-      return { ...state, loading: false };
-    case "city/loaded":
-      return { ...state, loading: true, currCity: action.payload };
-    case "createCity/loading":
       return { ...state, loading: true };
 
-    case "createCity/loaded":
+    case "city/loaded":
+      return { ...state, loading: false, currCity: action.payload };
+
+    case "city/created":
       return {
         ...state,
         loading: false,
         cities: [...state.cities, action.payload],
         currCity: action.payload,
       };
-    case "createDelete/loading":
-      return { ...state, loading: true };
-    case "createDelete/loaded":
+
+    case "city/deleted":
       return {
         ...state,
         loading: false,
-        cities: state.cities.filter((city) => city.id !== action.payload),
+        cities: state.cities.filter((c) => c.id !== action.payload),
         currCity: {},
       };
+
     case "rejected":
       return { ...state, loading: false, error: action.payload };
-    // setCities((cities) => cities.filter((city) => city.id !== id));
 
     default:
-      throw new Error("UnkownAction commited");
+      throw new Error("Unknown action");
   }
 }
+
 // eslint-disable-next-line react/prop-types
 function CitiesProvider({ children }) {
-  const URL = "http://localhost:9000";
-  const INITIAL_STATE = { cities: [], loading: false, currCity: {} };
-  const [{ cities, error, loading, currCity }, dispatch] = useReducer(
+  const [{ cities, currCity, loading, error }, dispatch] = useReducer(
     reducer,
     INITIAL_STATE
   );
-  useEffect(function () {
-    async function fetchCities() {
+
+  /* ======================
+     LOAD ALL CITIES
+  ====================== */
+  useEffect(() => {
+    async function loadCities() {
       dispatch({ type: "cities/loading" });
       try {
-        const res = await fetch(`${URL}/cities`);
-        if (!res.ok) throw new Error("Failed to fetch cities");
+        const res = await fetch(API);
+        if (!res.ok) throw new Error("Failed to load cities");
         const data = await res.json();
+        console.log(data)
         dispatch({ type: "cities/loaded", payload: data });
-      } catch (error) {
-        dispatch({ type: "rejected", payload: "Could not receive cities" });
+      } catch (err) {
+        dispatch({ type: "rejected", payload: err.message });
       }
     }
-    fetchCities();
+
+    loadCities();
   }, []);
 
+  /* ======================
+     GET ONE CITY
+  ====================== */
   async function GetCity(id) {
+    dispatch({ type: "city/loading" });
     try {
-      dispatch({ type: "city/loading" });
-      const res = await fetch(`${URL}/cities/${id}`);
-      if (!res.ok) throw new Error("Failed to fetch cities");
+      const res = await fetch(`${API}/${id}`);
+      if (!res.ok) throw new Error("City not found");
       const data = await res.json();
       dispatch({ type: "city/loaded", payload: data });
-    } catch (error) {
-      dispatch({ type: "rejected", payload: "Could not get cities" });
+    } catch (err) {
+      dispatch({ type: "rejected", payload: err.message });
     }
   }
 
+  /* ======================
+     CREATE CITY
+  ====================== */
   async function CreateCity(newCity) {
+    dispatch({ type: "cities/loading" });
     try {
-      dispatch({ type: "createCity/loading" });
-      const res = await fetch(`${URL}/cities`, {
+      const res = await fetch(API, {
         method: "POST",
-        body: JSON.stringify(newCity),
         headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cityName: newCity.cityName,
+          lat: newCity.position.lat,
+          lng: newCity.position.lng,
+          date: newCity.date,
+          notes: newCity.notes,
+        }),
       });
-      if (!res.ok) throw new Error("Failed to fetch cities");
+
       const data = await res.json();
-      dispatch({ type: "createCity/loaded", payload: data });
-    } catch (error) {
-      dispatch({ type: "rejected", payload: "Could not create City" });
+      if (!res.ok) throw new Error(data.error || "Failed to create city");
+
+      dispatch({ type: "city/created", payload: data });
+    } catch (err) {
+      dispatch({ type: "rejected", payload: err.message });
     }
   }
+
+  /* ======================
+     DELETE CITY
+  ====================== */
   async function DeleteCity(id) {
+    dispatch({ type: "cities/loading" });
     try {
-      dispatch({ type: "createDelete/loading" });
-      await fetch(`${URL}/cities/${id}`, {
-        method: "DELETE",
-      });
-      dispatch({ type: "createDelete/loaded", payload: id });
-    } catch (error) {
-      console.error("Caught a problem: " + error);
+      const res = await fetch(`${API}/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete city");
+      dispatch({ type: "city/deleted", payload: id });
+    } catch (err) {
+      dispatch({ type: "rejected", payload: err.message });
     }
   }
+
   return (
     <CitiesContext.Provider
       value={{
         cities,
-        loading,
-        GetCity,
         currCity,
+        loading,
+        error,
+        GetCity,
         CreateCity,
         DeleteCity,
       }}
@@ -117,11 +149,9 @@ function CitiesProvider({ children }) {
   );
 }
 
-// Custom hook to use the context
 function useCities() {
   const context = useContext(CitiesContext);
-  if (context === undefined)
-    throw new Error("This hook was used in an incorrect seeting");
+  if (!context) throw new Error("useCities must be used inside CitiesProvider");
   return context;
 }
 

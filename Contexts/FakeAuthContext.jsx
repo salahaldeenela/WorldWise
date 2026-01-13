@@ -1,42 +1,81 @@
 import { useContext, createContext, useReducer } from "react";
 
 const AuthContext = createContext();
+
 const INITIAL_STATE = {
   user: null,
+  token: null,
   isAuthenticated: false,
 };
+
 function reducer(state, action) {
   switch (action.type) {
     case "login":
-      return { ...state, isAuthenticated: true, user: action.payload };
+      return {
+        ...state,
+        user: action.payload.user,
+        token: action.payload.token,
+        isAuthenticated: true,
+      };
     case "logout":
-      return { ...state, user: null, isAuthenticated: false };
+      return { ...state, user: null, token: null, isAuthenticated: false };
     default:
-      throw new Error("Auth threw error");
+      throw new Error("Auth error");
   }
 }
-const FAKE_USER = {
-  name: "Jack",
-  email: "jack@example.com",
-  password: "qwerty",
-  avatar: "https://i.pravatar.cc/100?u=zz",
-};
-// eslint-disable-next-line react/prop-types
+
+const API = "https://backend-production-c718.up.railway.app/api/auth";
+
 function AuthProvider({ children }) {
-  const [{ user, isAuthenticated }, dispatch] = useReducer(
-    reducer,
-    INITIAL_STATE
-  );
-  function Login(email, password) {
-    if (FAKE_USER.email !== email && FAKE_USER.password !== password)
-      throw new Error("incorrect email or password");
-    dispatch({ type: "login", payload: FAKE_USER });
+  const [state, dispatch] = useReducer(reducer, INITIAL_STATE);
+
+  async function Register(name, email, password) {
+    const res = await fetch(`${API}/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, password }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Registration failed");
+
+    return data;
   }
+
+  async function Login(email, password) {
+    const res = await fetch(`${API}/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Login failed");
+
+    dispatch({ type: "login", payload: data });
+
+    // Persist session
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("user", JSON.stringify(data.user));
+  }
+
   function Logout() {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
     dispatch({ type: "logout" });
   }
+
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, Login, Logout }}>
+    <AuthContext.Provider
+      value={{
+        user: state.user,
+        token: state.token,
+        isAuthenticated: state.isAuthenticated,
+        Login,
+        Logout,
+        Register,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -44,8 +83,7 @@ function AuthProvider({ children }) {
 
 function useAuth() {
   const context = useContext(AuthContext);
-  if (context === undefined)
-    throw new Error("This hook was used in an incorrect seeting");
+  if (!context) throw new Error("useAuth used outside AuthProvider");
   return context;
 }
 

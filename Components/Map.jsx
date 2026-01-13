@@ -24,7 +24,7 @@ export default function Map() {
   const [lat, lng] = useURLPosition();
   const [position, setPosition] = useState([60, 60]);
   const { cities } = useCities();
-
+  console.log(cities)
   useEffect(
     function () {
       if (userPosition) setPosition([userPosition.lat, userPosition.lng]);
@@ -61,7 +61,7 @@ export default function Map() {
             position={[city.position.lat, city.position.lng]}
             key={city.id}
           >
-            <Popup>{city.cityName}</Popup>
+            <Popup>{city.cityname}</Popup>
           </Marker>
         ))}
         <ChangePosition position={position} />
