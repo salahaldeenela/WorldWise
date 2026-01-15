@@ -29,7 +29,6 @@ function reducer(state, action) {
       return {
         ...state,
         loading: false,
-        cities: [...state.cities, action.payload],
         currCity: action.payload,
       };
 
@@ -49,7 +48,6 @@ function reducer(state, action) {
   }
 }
 
-// eslint-disable-next-line react/prop-types
 function CitiesProvider({ children }) {
   const [{ cities, currCity, loading, error }, dispatch] = useReducer(
     reducer,
@@ -59,20 +57,19 @@ function CitiesProvider({ children }) {
   /* ======================
      LOAD ALL CITIES
   ====================== */
-  useEffect(() => {
-    async function loadCities() {
-      dispatch({ type: "cities/loading" });
-      try {
-        const res = await fetch(API);
-        if (!res.ok) throw new Error("Failed to load cities");
-        const data = await res.json();
-        console.log(data)
-        dispatch({ type: "cities/loaded", payload: data });
-      } catch (err) {
-        dispatch({ type: "rejected", payload: err.message });
-      }
+  async function loadCities() {
+    dispatch({ type: "cities/loading" });
+    try {
+      const res = await fetch(API);
+      if (!res.ok) throw new Error("Failed to load cities");
+      const data = await res.json();
+      dispatch({ type: "cities/loaded", payload: data });
+    } catch (err) {
+      dispatch({ type: "rejected", payload: err.message });
     }
+  }
 
+  useEffect(() => {
     loadCities();
   }, []);
 
@@ -92,10 +89,11 @@ function CitiesProvider({ children }) {
   }
 
   /* ======================
-     CREATE CITY
+     CREATE CITY (SELF RELOAD)
   ====================== */
   async function CreateCity(newCity) {
     dispatch({ type: "cities/loading" });
+
     try {
       const res = await fetch(API, {
         method: "POST",
@@ -113,6 +111,10 @@ function CitiesProvider({ children }) {
       if (!res.ok) throw new Error(data.error || "Failed to create city");
 
       dispatch({ type: "city/created", payload: data });
+
+      // 🔁 SELF RELOAD (no page refresh)
+      await loadCities();
+
     } catch (err) {
       dispatch({ type: "rejected", payload: err.message });
     }
@@ -151,7 +153,8 @@ function CitiesProvider({ children }) {
 
 function useCities() {
   const context = useContext(CitiesContext);
-  if (!context) throw new Error("useCities must be used inside CitiesProvider");
+  if (!context)
+    throw new Error("useCities must be used inside CitiesProvider");
   return context;
 }
 
