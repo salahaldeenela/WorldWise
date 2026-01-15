@@ -1,5 +1,5 @@
 import express from "express";
-import { db } from "../dp.js"; // keep your dp.js name
+import { db } from "../db.js"; // keep your dp.js name
 
 const router = express.Router();
 
